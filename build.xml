@@ -1,4 +1,4 @@
-<project name="easyregex" default="war">
+<project name="easyregex" default="compile">
 
  <target name="init" description="Initialize all properties and paths">
  
