@@ -1,101 +1,108 @@
-<project name="easyregex" default="compile">
+<project name="easyRegex" default="compile">
 
- <target name="init" description="Initialize all properties and paths">
- 
- <property name="home.dir" value="D:\projects\easyregex"/>
- <property name="build.dir" value="build"/>
- <property name="class.dir" value="${build.dir}/class"/>
- <property name="scala.src.dir" value="src/scala"/>
- <property name="war.build.dir" value="${build.dir}/war"/>
- <property name="war.lib.dir" value="${war.build.dir}/WEB-INF/lib"/>
- <property name="war.file" value="build/easyregex.war"/>
- <property name="web.xml" value="src/webapp/web.xml"/>
+    <target name="init" description="Initialize all properties and paths">
+        <property name="project.name" value="easyRegex" />
+        <property name="home.dir" value="D:\projects\${project.name}"/>
+        <property name="build.dir" value="build"/>
+        <property name="class.dir" value="${build.dir}/class"/>
+        <property name="test.class.dir" value="${class.dir}\test\${project.name}"/>
+        <property name="src.dir" value="src/${project.name}"/>
+        <property name="test.dir" value="test/${project.name}"/>
+        <property name="repo" value="D:/repo"/>
+        <property name="test.jar" value="test.jar"/>
+                                                               
+        <!-- Location of scala files -->
+        <property name="scala.dir"
+                  value="D:/scala/scala-2.7.5.final"/>
+        <property name="scala-compiler.jar"
+                  value="${scala.dir}/lib/scala-compiler.jar"/>
+        <property name="scala-library.jar"
+                  value="${scala.dir}/lib/scala-library.jar"/>
 
- <!-- Location of scala files -->
- <property name="scala.dir"
-  value="D:/scala/scala-2.7.5.final"/>
- <property name="scala-compiler.jar"
-  value="${scala.dir}/lib/scala-compiler.jar"/>
- <property name="scala-library.jar"
-  value="${scala.dir}/lib/scala-library.jar"/>
 
- <!-- Location of Liftweb files -->
- <property name="liftweb.dir" value="D:/projects/lift/lift-jars"/>
- <property name="lift-util.jar"
-  value="${liftweb.dir}/lift-util-1.0.jar"/>
- <property name="lift-webkit.jar"
-  value="${liftweb.dir}/lift-webkit-1.0.jar"/>
+        <path id="scala.classpath">
+            <pathelement location="${scala-compiler.jar}"/>
+            <pathelement location="${scala-library.jar}"/>
+        </path>
 
- <!-- A couple of other libraries are required -->
- <property name="log4j.jar"
-  value="${liftweb.dir}/log4j-1.2.14.jar"/>
- <property name="fileupload.jar"
-       value="${liftweb.dir}/commons-fileupload-1.2.1.jar"/>
+        <path id="compile.classpath">
+            <path refid="scala.classpath"/>
+        </path>
 
- <path id="scala.classpath">
-     <pathelement location="${scala-compiler.jar}"/>
-     <pathelement location="${scala-library.jar}"/>
- </path>
+        <path id="scalatest.classpath">
+            <pathelement location="${repo}/scalatest-1.0-SNAPSHOT.jar"/>
+            <path refid="scala.classpath"/>
+        </path>
 
- <path id="compile.classpath">
-     <path refid="scala.classpath"/>
-     <pathelement location="${lift-util.jar}"/>
-     <pathelement location="${lift-webkit.jar}"/>
- </path>
+        <taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestTask">
+            <classpath>
+                <path refid="scalatest.classpath"/>
+                <pathelement location="${test.class.dir}"/>
+            </classpath>
+        </taskdef>
+        
+         <taskdef name="scalac"
+             classname="scala.tools.ant.Scalac">
+            <classpath>
+                <pathelement location="${scala-compiler.jar}"/>
+                <pathelement location="${scala-library.jar}"/>
 
- <!-- define the "scalac" ant task -->
- <taskdef resource="scala/tools/ant/antlib.xml">
-     <classpath refid="scala.classpath"/>
- </taskdef>
+            </classpath>
+        </taskdef>
+
     </target>
 
+
+    <target name="rebuild" depends="clean, compile">
+
+    </target>
+
+
     <target name="clean" depends="init">
- <delete dir="${build.dir}"/>
+        <delete dir="${build.dir}"/>
     </target>
 
     <target name="mkdirs" depends="init">
- <mkdir dir="${build.dir}"/>
- <mkdir dir="${class.dir}"/>
+        <mkdir dir="${class.dir}"/>
+
     </target>
 
-    <target name="compile" depends="init,mkdirs"
-     description="Compile scala files">
- <scalac
-     srcdir="${scala.src.dir}"
-     destdir="${class.dir}"
-     addparams="-g:vars"
-     classpathref="compile.classpath"
-     force="changed"
-     deprecation="on"
- >
-     <include name="**/*.scala"/>
- </scalac>
+    <target name="test" depends="compile-test">
+        <scalatest runpath="${test.class.dir}\${test.jar}" haltonfailure="true">
+             <suite classname="test.${project.name}.HelloWorldSuite" />
+            <reporter type="stdout"/>
+        </scalatest>
     </target>
 
-    <target name="war" depends="init,compile">
- <!-- First make an image directory in war.build.dir -->
- <copy todir="${war.build.dir}">
-     <fileset dir="src/webapp" includes="**/*.html"/>
- </copy>
- <mkdir dir="${war.build.dir}/WEB-INF"/>
-
- <copy todir="${war.lib.dir}" file="${scala-library.jar}"/>
- <copy todir="${war.lib.dir}" file="${lift-util.jar}"/>
- <copy todir="${war.lib.dir}" file="${lift-webkit.jar}"/>
- <copy todir="${war.lib.dir}" file="${log4j.jar}"/>
- <copy todir="${war.lib.dir}" file="${fileupload.jar}"/>
-
- <copy todir="${war.build.dir}/WEB-INF/classes">
-     <fileset dir="${class.dir}" includes="**/*.class"/>
- </copy>
-
- <!-- Put everything from our war directory into a war file -->
- <war
-     destfile="${war.file}"
-     webxml="${web.xml}"
- >
-     <fileset dir="${war.build.dir}" includes="**/*"/>
- </war>
+    <target name="compile" depends="init, mkdirs"
+            description="Compile scala files">
+        <scalac
+                srcdir="${src.dir}"
+                destdir="${class.dir}"
+                addparams="-g:vars"
+                classpathref="compile.classpath"
+                force="changed"
+                deprecation="on"
+                >
+            <include name="**/*.scala"/>
+        </scalac>
     </target>
+
+
+    <target name="compile-test" depends="compile"
+            description="Compile scala files">
+        <scalac
+                srcdir="${test.dir}"
+                destdir="${class.dir}"
+                addparams="-g:vars"
+                classpathref="scalatest.classpath"
+                force="changed"
+                deprecation="on"
+                >
+            <include name="**/*.scala"/>
+        </scalac>
+         <jar jarfile="${test.class.dir}\${test.jar}" basedir="${class.dir}" includes="test/${project.name}/**/*.class" />
+    </target>
+
 
 </project>
